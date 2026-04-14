@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — Red Light Green Light</title>
+  <style>
+    /* ==================== RESET & BASE ==================== */
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', monospace, sans-serif;
+      background: #0d0d1a;
+      color: #e0e0e0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ==================== HEADER ==================== */
+    .header {
+      background: #1a1a2e;
+      padding: 12px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 2px solid #333;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .header h1 {
+      font-size: 18px;
+      color: #EF9F27;
+    }
+    .status-badges {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .badge {
+      padding: 4px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .badge-tiktok {
+      background: #333;
+      color: #888;
+    }
+    .badge-tiktok.connected {
+      background: #1D9E75;
+      color: white;
+    }
+    .badge-tiktok.disconnected {
+      background: #E24B4A;
+      color: white;
+    }
+    .badge-state {
+      background: #534AB7;
+      color: white;
+    }
+    .badge-round {
+      background: #BA7517;
+      color: white;
+    }
+
+    /* ==================== MAIN LAYOUT ==================== */
+    .main {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ==================== LEFT PANEL: CONTROLS ==================== */
+    .controls-panel {
+      width: 320px;
+      min-width: 280px;
+      background: #14142a;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      border-right: 2px solid #333;
+      overflow-y: auto;
+    }
+    .controls-panel h2 {
+      font-size: 15px;
+      color: #378ADD;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .btn-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .btn {
+      padding: 12px 16px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .btn:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .btn:active:not(:disabled) {
+      transform: translateY(0);
+    }
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+    .btn-start {
+      background: #1D9E75;
+      color: white;
+    }
+    .btn-start:hover:not(:disabled) {
+      background: #168a64;
+    }
+    .btn-reset {
+      background: #E24B4A;
+      color: white;
+    }
+    .btn-reset:hover:not(:disabled) {
+      background: #c93d3d;
+    }
+    .btn-green {
+      background: #378ADD;
+      color: white;
+    }
+    .btn-green:hover:not(:disabled) {
+      background: #2a6fbf;
+    }
+    .btn-red {
+      background: #D85A30;
+      color: white;
+    }
+    .btn-red:hover:not(:disabled) {
+      background: #b84b28;
+    }
+    .btn-camera {
+      background: #1E90FF;
+      color: white;
+    }
+    .btn-camera:hover:not(:disabled) {
+      background: #1670CC;
+    }
+    .btn-camera.active {
+      background: #E24B4A;
+    }
+
+    /* ==================== RIGHT PANEL: PLAYERS ==================== */
+    .players-panel {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .players-header {
+      padding: 16px 20px;
+      background: #1a1a2e;
+      border-bottom: 2px solid #333;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .players-header h2 {
+      font-size: 15px;
+      color: #378ADD;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .players-count {
+      font-size: 13px;
+      color: #888;
+    }
+    .players-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+    }
+    .player-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 12px;
+      margin-bottom: 6px;
+      border-radius: 8px;
+      background: #1a1a2e;
+      transition: all 0.2s ease;
+    }
+    .player-item:hover {
+      background: #22223a;
+    }
+    .player-item.eliminated {
+      opacity: 0.4;
+    }
+    .player-item.winner {
+      background: #2a2a1a;
+      border: 1px solid #EF9F27;
+    }
+    .player-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 2px solid #555;
+      flex-shrink: 0;
+    }
+    .player-info {
+      flex: 1;
+      min-width: 0;
+    }
+    .player-name {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .player-stats {
+      font-size: 11px;
+      color: #888;
+      margin-top: 2px;
+    }
+    .player-status {
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      flex-shrink: 0;
+    }
+    .status-alive {
+      background: #1D9E75;
+      color: white;
+    }
+    .status-eliminated {
+      background: #E24B4A;
+      color: white;
+    }
+    .status-winner {
+      background: #EF9F27;
+      color: #1a1a2e;
+    }
+    .btn-kick {
+      padding: 4px 10px;
+      border: none;
+      border-radius: 4px;
+      background: #D85A30;
+      color: white;
+      font-size: 11px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+      transition: background 0.15s;
+    }
+    .btn-kick:hover {
+      background: #b84b28;
+    }
+    .btn-kick:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+
+    /* ==================== TIKTOK CONFIG PANEL ==================== */
+    .tiktok-config {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid #333;
+    }
+    .tiktok-config h3 {
+      font-size: 14px;
+      color: #EF9F27;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .input-row {
+      display: flex;
+      gap: 8px;
+    }
+    .input-group label {
+      font-size: 12px;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .input-group input {
+      flex: 1;
+      padding: 10px 12px;
+      border: 1px solid #333;
+      border-radius: 6px;
+      background: #0d0d1a;
+      color: #e0e0e0;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    .input-group input:focus {
+      border-color: #378ADD;
+    }
+    .input-group input:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .btn-connect {
+      background: #1D9E75;
+      color: white;
+      flex: 1;
+    }
+    .btn-connect:hover:not(:disabled) {
+      background: #168a64;
+    }
+    .btn-disconnect {
+      background: #E24B4A;
+      color: white;
+      flex: 1;
+    }
+    .btn-disconnect:hover:not(:disabled) {
+      background: #c93d3d;
+    }
+    .connection-status {
+      font-size: 12px;
+      padding: 6px 10px;
+      border-radius: 4px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .status-connected {
+      background: rgba(29, 158, 117, 0.15);
+      color: #1D9E75;
+    }
+    .status-disconnected {
+      background: rgba(226, 75, 74, 0.15);
+      color: #E24B4A;
+    }
+    .status-connecting {
+      background: rgba(55, 138, 221, 0.15);
+      color: #378ADD;
+    }
+    .status-error {
+      background: rgba(216, 90, 48, 0.15);
+      color: #D85A30;
+    }
+
+    /* ==================== LEADERBOARD ==================== */
+    .leaderboard {
+      background: #1a1a2e;
+      border-radius: 8px;
+      padding: 16px;
+      border: 1px solid #333;
+      margin-top: 12px;
+    }
+    .leaderboard h3 {
+      font-size: 14px;
+      color: #EF9F27;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .leaderboard-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12px;
+    }
+    .leaderboard-table th {
+      text-align: left;
+      padding: 6px 8px;
+      background: #0d0d1a;
+      color: #888;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      font-size: 10px;
+      border-bottom: 1px solid #333;
+    }
+    .leaderboard-table td {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      font-family: 'Courier New', monospace;
+    }
+    .leaderboard-table tr.rank-1 td {
+      background: rgba(239, 159, 39, 0.15);
+      color: #EF9F27;
+      font-weight: bold;
+    }
+    .leaderboard-table tr.rank-2 td {
+      background: rgba(192, 192, 192, 0.1);
+      color: #C0C0C0;
+    }
+    .leaderboard-table tr.rank-3 td {
+      background: rgba(205, 127, 50, 0.1);
+      color: #CD7F32;
+    }
+    .leaderboard-table tr.eliminated td {
+      opacity: 0.4;
+      text-decoration: line-through;
+    }
+    .rank-badge {
+      display: inline-block;
+      width: 22px;
+      height: 22px;
+      line-height: 22px;
+      text-align: center;
+      border-radius: 50%;
+      background: #333;
+      color: #888;
+      font-weight: bold;
+      font-size: 11px;
+    }
+    .rank-badge.gold { background: #EF9F27; color: #1a1a2e; }
+    .rank-badge.silver { background: #C0C0C0; color: #1a1a2e; }
+    .rank-badge.bronze { background: #CD7F32; color: #1a1a2e; }
+
+    /* ==================== MOBILE RESPONSIVE ==================== */
+    @media (max-width: 768px) {
+      body { flex-direction: column; }
+      .header {
+        flex-direction: column;
+        align-items: flex-start;
+        padding: 10px 16px;
+      }
+      .header h1 { font-size: 14px; }
+      .status-badges { flex-wrap: wrap; }
+      .main {
+        flex-direction: column;
+        overflow-y: auto;
+      }
+      .controls-panel {
+        width: 100%;
+        min-width: unset;
+        border-right: none;
+        border-bottom: 2px solid #333;
+        padding: 16px;
+        max-height: none;
+      }
+      .players-panel { flex: none; }
+      .players-header { padding: 12px 16px; }
+      .players-list { padding: 8px; max-height: 40vh; }
+      .player-item { padding: 8px 10px; }
+      .player-avatar { width: 32px; height: 32px; }
+      .player-name { font-size: 12px; }
+      .player-stats { font-size: 10px; }
+      .btn-kick { padding: 3px 8px; font-size: 10px; }
+      .log-panel { height: 150px; min-height: 100px; }
+      .btn { padding: 10px 12px; font-size: 13px; }
+      .leaderboard-table { font-size: 11px; }
+      .leaderboard-table th,
+      .leaderboard-table td { padding: 4px 6px; }
+    }
+
+    @media (max-width: 480px) {
+      .header h1 { font-size: 12px; }
+      .badge { font-size: 11px; padding: 3px 8px; }
+      .controls-panel { padding: 12px; }
+      .tiktok-config { padding: 12px; }
+      .leaderboard { padding: 12px; }
+      .btn-group { gap: 6px; }
+      .input-row { flex-direction: column; }
+      .players-list { max-height: 30vh; }
+      .log-panel { height: 120px; min-height: 80px; }
+      .log-content { font-size: 11px; }
+    }
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: #555;
+      font-size: 14px;
+    }
+
+    /* ==================== LOG PANEL ==================== */
+    .log-panel {
+      height: 200px;
+      min-height: 120px;
+      background: #0a0a15;
+      border-top: 2px solid #333;
+      display: flex;
+      flex-direction: column;
+    }
+    .log-header {
+      padding: 10px 20px;
+      background: #1a1a2e;
+      border-bottom: 1px solid #333;
+      font-size: 13px;
+      color: #378ADD;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    .log-content {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px 20px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+    .log-entry {
+      margin-bottom: 4px;
+    }
+    .log-time {
+      color: #555;
+      margin-right: 8px;
+    }
+    .log-join { color: #378ADD; }
+    .log-eliminate { color: #E24B4A; }
+    .log-gift { color: #EF9F27; }
+    .log-state { color: #1D9E75; }
+    .log-error { color: #D85A30; }
+    .log-winner { color: #EF9F27; font-weight: bold; }
+    .log-info { color: #888; }
+
+    /* ==================== SCROLLBAR ==================== */
+    ::-webkit-scrollbar {
+      width: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #0d0d1a;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #333;
+      border-radius: 3px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+  </style>
+</head>
+<body>
+  <!-- ==================== HEADER ==================== -->
+  <div class="header">
+    <h1>🎮 Red Light Green Light — Dashboard</h1>
+    <div class="status-badges">
+      <div class="badge badge-tiktok" id="tiktokStatus">
+        <span>📡</span> <span id="tiktokText">Connecting...</span>
+      </div>
+      <div class="badge badge-state" id="stateBadge">
+        IDLE
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MAIN ==================== -->
+  <div class="main">
+    <!-- LEFT: Controls -->
+    <div class="controls-panel">
+      <h2>🎛️ Kontrol Game</h2>
+      <div class="btn-group">
+        <button class="btn btn-start" id="btnStart" disabled>
+          ▶️ Mulai Game
+        </button>
+        <button class="btn btn-reset" id="btnReset">
+          🔄 Reset Game
+        </button>
+        <button class="btn btn-green" id="btnGreen">
+          🟢 Lampu Hijau
+        </button>
+        <button class="btn btn-red" id="btnRed">
+          🔴 Lampu Merah
+        </button>
+        <button class="btn btn-camera" id="btnCamera">
+          📷 Kamera Host
+        </button>
+      </div>
+
+      <!-- TikTok Config Panel -->
+      <div class="tiktok-config">
+        <h3>📡 Konfigurasi TikTok Live</h3>
+        <div class="input-group">
+          <label for="tiktokUsername">Username TikTok Live</label>
+          <div class="input-row">
+            <input
+              type="text"
+              id="tiktokUsername"
+              placeholder="username_live"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </div>
+          <div class="input-row">
+            <button class="btn btn-connect" id="btnConnect">
+              🔗 Connect
+            </button>
+            <button class="btn btn-disconnect" id="btnDisconnect">
+              ⛔ Disconnect
+            </button>
+          </div>
+          <div class="connection-status status-disconnected" id="connectionStatus">
+            <span id="statusIcon">🔴</span>
+            <span id="statusText">Disconnected</span>
+          </div>
+        </div>
+      </div>
+
+      <h2 style="margin-top: 16px;">📊 Statistik</h2>
+      <div style="font-size: 13px; color: #888; line-height: 1.8;">
+        <div>Total Pemain: <strong id="statTotal">0</strong></div>
+        <div>Alive: <strong id="statAlive">0</strong></div>
+        <div>Eliminated: <strong id="statEliminated">0</strong></div>
+        <div>Waiting: <strong id="statWaiting">0</strong></div>
+        <div>Finish: <strong id="statFinish">0</strong> / <span id="statMaxFinish">3</span></div>
+        <div>Waktu: <strong id="statTimer">00:00</strong></div>
+      </div>
+
+      <!-- Leaderboard -->
+      <div class="leaderboard">
+        <h3>🏆 Leaderboard</h3>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Pemain</th>
+              <th>Progress</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboardBody">
+            <tr><td colspan="4" style="text-align:center;color:#555;padding:20px;">Belum ada data</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- RIGHT: Players -->
+    <div class="players-panel">
+      <div class="players-header">
+        <h2>👥 Pemain</h2>
+        <span class="players-count" id="playersCount">0 alive / 0 total</span>
+      </div>
+      <div class="players-list" id="playersList">
+        <div class="empty-state">Belum ada pemain. Menunggu pemain join...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== LOG ==================== -->
+  <div class="log-panel">
+    <div class="log-header">📋 Log Event</div>
+    <div class="log-content" id="logContent"></div>
+  </div>
+
+  <!-- ==================== SOCKET.IO ==================== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+  <script>
+    // ===================== SOCKET SETUP =====================
+    const socket = io('http://localhost:3000');
+
+    // ===================== STATE =====================
+    let players = [];
+    let gameState = 'idle';
+    let tiktokConnected = false;
+
+    // ===================== DOM ELEMENTS =====================
+    const btnStart = document.getElementById('btnStart');
+    const btnReset = document.getElementById('btnReset');
+    const btnGreen = document.getElementById('btnGreen');
+    const btnRed   = document.getElementById('btnRed');
+    const playersList = document.getElementById('playersList');
+    const playersCount = document.getElementById('playersCount');
+    const logContent = document.getElementById('logContent');
+    const tiktokStatus = document.getElementById('tiktokStatus');
+    const tiktokText = document.getElementById('tiktokText');
+    const stateBadge = document.getElementById('stateBadge');
+    const roundNumber = document.getElementById('roundNumber');
+    const statTotal = document.getElementById('statTotal');
+    const statAlive = document.getElementById('statAlive');
+    const statEliminated = document.getElementById('statEliminated');
+    const statWaiting = document.getElementById('statWaiting');
+    const statFinish = document.getElementById('statFinish');
+    const statMaxFinish = document.getElementById('statMaxFinish');
+    const statTimer = document.getElementById('statTimer');
+    const leaderboardBody = document.getElementById('leaderboardBody');
+
+    // TikTok Config Elements
+    const tiktokUsernameInput = document.getElementById('tiktokUsername');
+    const btnConnect = document.getElementById('btnConnect');
+    const btnDisconnect = document.getElementById('btnDisconnect');
+    const connectionStatus = document.getElementById('connectionStatus');
+    const statusIcon = document.getElementById('statusIcon');
+    const statusText = document.getElementById('statusText');
+
+    // ===================== BUTTON HANDLERS =====================
+    btnStart.addEventListener('click', () => {
+      const aliveCount = players.filter(p => p.status === 'alive').length;
+      
+      if (aliveCount < 2) {
+        addLog('error', `❌ Tidak bisa start! Minimal 2 pemain, saat ini: ${aliveCount} pemain.`);
+        showNotification('error', '⚠️ Player Tidak Cukup!', `Perlu minimal 2 pemain untuk start. Saat ini: ${aliveCount} pemain.`);
+        return;
+      }
+
+      socket.emit('host:start');
+      addLog('state', 'Host memulai game...');
+      showNotification('success', '✅ Game Dimulai!', `${aliveCount} pemain ready. Game dimulai!`);
+    });
+
+    btnReset.addEventListener('click', () => {
+      socket.emit('host:reset');
+      addLog('state', 'Host reset game!');
+    });
+
+    btnGreen.addEventListener('click', () => {
+      socket.emit('host:green');
+      addLog('state', 'Host force green light!');
+    });
+
+    btnRed.addEventListener('click', () => {
+      socket.emit('host:red');
+      addLog('state', 'Host force red light!');
+    });
+
+    // ===================== CAMERA HANDLER =====================
+    let cameraEnabled = false;
+    const btnCamera = document.getElementById('btnCamera');
+
+    btnCamera.addEventListener('click', () => {
+      cameraEnabled = !cameraEnabled;
+      socket.emit('camera:toggle', { enabled: cameraEnabled });
+
+      if (cameraEnabled) {
+        btnCamera.classList.add('active');
+        btnCamera.textContent = '📷 Kamera ON';
+        addLog('state', '📷 Kamera host dinyalakan!');
+      } else {
+        btnCamera.classList.remove('active');
+        btnCamera.textContent = '📷 Kamera Host';
+        addLog('state', '📷 Kamera host dimatikan!');
+      }
+    });
+
+    // ===================== TIKTOK CONFIG HANDLERS =====================
+    btnConnect.addEventListener('click', () => {
+      const username = tiktokUsernameInput.value.trim();
+      if (!username) {
+        updateConnectionStatus('error', '⚠️', 'Username tidak boleh kosong');
+        return;
+      }
+      socket.emit('tiktok:connect', { username });
+      addLog('state', `📡 Connecting ke @${username}...`);
+    });
+
+    btnDisconnect.addEventListener('click', () => {
+      socket.emit('tiktok:disconnect');
+      addLog('state', '📡 Disconnecting dari TikTok...');
+    });
+
+    // Enter key pada input
+    tiktokUsernameInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        btnConnect.click();
+      }
+    });
+
+    // ===================== UPDATE CONNECTION STATUS =====================
+    function updateConnectionStatus(status, icon, text) {
+      connectionStatus.className = `connection-status status-${status}`;
+      statusIcon.textContent = icon;
+      statusText.textContent = text;
+
+      // Update button states
+      if (status === 'connected') {
+        btnConnect.disabled = true;
+        btnDisconnect.disabled = false;
+        tiktokUsernameInput.disabled = true;
+      } else if (status === 'connecting') {
+        btnConnect.disabled = true;
+        btnDisconnect.disabled = true;
+        tiktokUsernameInput.disabled = true;
+      } else {
+        btnConnect.disabled = false;
+        btnDisconnect.disabled = false;
+        tiktokUsernameInput.disabled = false;
+      }
+    }
+
+    // ===================== UPDATE BUTTONS =====================
+    function updateButtons() {
+      const alive = players.filter(p => p.status === 'alive').length;
+      btnStart.disabled = alive < 2 || (gameState !== 'idle' && gameState !== 'lobby');
+    }
+
+    // ===================== UPDATE STATS =====================
+    function updateStats() {
+      const total = players.length;
+      const alive = players.filter(p => p.status === 'alive').length;
+      const eliminated = players.filter(p => p.status === 'eliminated').length;
+      const winner = players.filter(p => p.status === 'winner').length;
+
+      statTotal.textContent = total;
+      statAlive.textContent = alive;
+      statEliminated.textContent = eliminated + winner;
+      statWaiting.textContent = players.filter(p => p.waiting).length;
+      statFinish.textContent = finishedCount;
+      statMaxFinish.textContent = maxFinishLimit;
+
+      // Format timer
+      const minutes = Math.floor(elapsedSeconds / 60);
+      const seconds = elapsedSeconds % 60;
+      statTimer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+
+      playersCount.textContent = `${alive} alive / ${total} total`;
+
+      // State badge
+      const stateLabels = {
+        idle: 'IDLE',
+        lobby: 'LOBBY',
+        countdown: 'COUNTDOWN',
+        green_light: 'GREEN LIGHT',
+        red_light: 'RED LIGHT',
+        checking: 'CHECKING',
+        round_end: 'LANJUT',
+        game_over: 'GAME OVER'
+      };
+      stateBadge.textContent = stateLabels[gameState] || gameState;
+
+      updateButtons();
+      renderLeaderboard();
+    }
+
+    // ===================== RENDER LEADERBOARD =====================
+    function renderLeaderboard() {
+      if (players.length === 0) {
+        leaderboardBody.innerHTML = '<tr><td colspan="4" style="text-align:center;color:#555;padding:20px;">Belum ada data</td></tr>';
+        return;
+      }
+
+      // Sort by posisi descending (yang paling depan di atas)
+      const sorted = [...players].sort((a, b) => {
+        // Winner dulu, lalu berdasarkan posisi, baru eliminated
+        const statusOrder = { winner: 0, alive: 1, eliminated: 2 };
+        const orderA = statusOrder[a.status] ?? 2;
+        const orderB = statusOrder[b.status] ?? 2;
+        if (orderA !== orderB) return orderA - orderB;
+        return (b.posisi || 0) - (a.posisi || 0);
+      });
+
+      leaderboardBody.innerHTML = sorted.map((p, i) => {
+        const rank = i + 1;
+        const rankClass = rank === 1 ? 'gold' : rank === 2 ? 'silver' : rank === 3 ? 'bronze' : '';
+        const isWinner = p.status === 'winner';
+        const isEliminated = p.status === 'eliminated';
+        const rowClass = isEliminated ? 'eliminated' : (isWinner ? `rank-${rank}` : '');
+        const statusLabel = isWinner ? '🏆 WIN' : isEliminated ? 'OUT' : `${p.posisi?.toFixed(1) || 0}%`;
+        const progress = Math.min(100, Math.max(0, p.posisi || 0));
+
+        return `
+          <tr class="${rowClass}">
+            <td><span class="rank-badge ${rankClass}">${rank}</span></td>
+            <td>@${p.username}</td>
+            <td>
+              <div style="background:#333;border-radius:3px;height:8px;width:100%;overflow:hidden;">
+                <div style="background:${p.color || '#378ADD'};height:100%;width:${progress}%;border-radius:3px;"></div>
+              </div>
+            </td>
+            <td>${statusLabel}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // ===================== RENDER PLAYERS =====================
+    function renderPlayers() {
+      if (players.length === 0) {
+        playersList.innerHTML = '<div class="empty-state">Belum ada pemain. Menunggu pemain join...</div>';
+        return;
+      }
+
+      // Sort: alive first, then eliminated, then winner
+      const sorted = [...players].sort((a, b) => {
+        const order = { alive: 0, waiting: 1, eliminated: 2, winner: 3 };
+        return (order[a.status] || 2) - (order[b.status] || 2);
+      });
+
+      playersList.innerHTML = sorted.map(player => {
+        const isEliminated = player.status === 'eliminated';
+        const isWinner = player.status === 'winner';
+        const isAlive = player.status === 'alive';
+
+        return `
+          <div class="player-item ${isEliminated ? 'eliminated' : ''} ${isWinner ? 'winner' : ''}">
+            <img 
+              class="player-avatar" 
+              src="${player.avatarUrl || ''}" 
+              alt="${player.username}"
+              onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 36 36%22><circle cx=%2218%22 cy=%2218%22 r=%2218%22 fill=%22${encodeURIComponent(player.color || '#555')}%22/><text x=%2218%22 y=%2224%22 text-anchor=%22middle%22 fill=%22white%22 font-size=%2216%22 font-weight=%22bold%22>${encodeURIComponent(player.username[0] || '?')}</text></svg>'"
+            />
+            <div class="player-info">
+              <div class="player-name">@${player.username}</div>
+              <div class="player-stats">
+                Posisi: ${player.posisi?.toFixed(1) || 0}% · 
+                Kecepatan: ${player.kecepatan || '-'}
+              </div>
+            </div>
+            <span class="player-status ${
+              isWinner ? 'status-winner' : 
+              isEliminated ? 'status-eliminated' : 
+              'status-alive'
+            }">
+              ${isWinner ? '🏆 WIN' : isEliminated ? 'OUT' : 'ALIVE'}
+            </span>
+            ${isAlive ? `<button class="btn-kick" onclick="kickPlayer('${player.uniqueId}')">Kick</button>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ===================== KICK PLAYER =====================
+    function kickPlayer(uniqueId) {
+      socket.emit('host:kick', { uniqueId });
+      addLog('eliminate', `Host mengkick pemain ${uniqueId}`);
+    }
+
+    // ===================== NOTIFICATION SYSTEM =====================
+    function showNotification(type, title, message) {
+      // Buat notification element
+      const notif = document.createElement('div');
+      notif.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 20px 25px;
+        border-radius: 12px;
+        font-size: 14px;
+        font-weight: 600;
+        z-index: 10000;
+        max-width: 400px;
+        box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+        animation: slideIn 0.3s ease;
+        font-family: 'Segoe UI', monospace, sans-serif;
+      `;
+
+      // Styling berdasarkan type
+      if (type === 'error') {
+        notif.style.background = 'linear-gradient(135deg, #E24B4A, #c93d3d)';
+        notif.style.color = 'white';
+        notif.style.borderLeft = '5px solid #ff6b6b';
+      } else if (type === 'success') {
+        notif.style.background = 'linear-gradient(135deg, #1D9E75, #168a64)';
+        notif.style.color = 'white';
+        notif.style.borderLeft = '5px solid #2ecc71';
+      } else if (type === 'warning') {
+        notif.style.background = 'linear-gradient(135deg, #BA7517, #9a6310)';
+        notif.style.color = 'white';
+        notif.style.borderLeft = '5px solid #f39c12';
+      } else {
+        notif.style.background = 'linear-gradient(135deg, #378ADD, #2a6fbf)';
+        notif.style.color = 'white';
+        notif.style.borderLeft = '5px solid #3498db';
+      }
+
+      notif.innerHTML = `
+        <div style="font-size: 16px; margin-bottom: 5px;">${title}</div>
+        <div style="font-weight: 400; font-size: 13px; opacity: 0.9;">${message}</div>
+      `;
+
+      document.body.appendChild(notif);
+
+      // Auto remove setelah 4 detik
+      setTimeout(() => {
+        notif.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => {
+          if (notif.parentNode) {
+            notif.parentNode.removeChild(notif);
+          }
+        }, 300);
+      }, 4000);
+    }
+
+    // Tambahkan CSS animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(400px);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+
+    // ===================== LOGGING =====================
+    function addLog(type, message) {
+      const now = new Date();
+      const time = now.toTimeString().slice(0, 8);
+
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.innerHTML = `<span class="log-time">[${time}]</span>${message}`;
+
+      logContent.appendChild(entry);
+      logContent.scrollTop = logContent.scrollHeight;
+
+      // Limit log entries to 200
+      while (logContent.children.length > 200) {
+        logContent.removeChild(logContent.firstChild);
+      }
+    }
+
+    // ===================== SOCKET LISTENERS =====================
+
+    // State update
+    socket.on('state:update', data => {
+      gameState = data.state;
+
+      if (data.elapsed !== undefined) elapsedSeconds = data.elapsed;
+      if (data.finishedCount !== undefined) finishedCount = data.finishedCount;
+      if (data.maxFinish !== undefined) maxFinishLimit = data.maxFinish;
+
+      if (data.players) {
+        players = data.players;
+      }
+
+      updateStats();
+      renderPlayers();
+      addLog('state', `State → ${data.state}`);
+    });
+
+    // Player joined
+    socket.on('player:joined', player => {
+      const exists = players.find(p => p.uniqueId === player.uniqueId);
+      if (!exists) {
+        players.push(player);
+        updateStats();
+        renderPlayers();
+        addLog('join', `✅ ${player.username} bergabung!`);
+      }
+    });
+
+    // Player eliminated
+    socket.on('player:eliminated', data => {
+      const p = players.find(p => p.uniqueId === data.player.uniqueId);
+      if (p) {
+        p.status = 'eliminated';
+        updateStats();
+        renderPlayers();
+        addLog('eliminate', `💀 ${data.player.username} tereliminasi! (${data.reason})`);
+      }
+    });
+
+    // Player winner
+    socket.on('player:winner', data => {
+      if (data.player) {
+        const p = players.find(p => p.uniqueId === data.player.uniqueId);
+        if (p) p.status = 'winner';
+        updateStats();
+        renderPlayers();
+        addLog('winner', `🏆 ${data.player.username} MENANG!`);
+      }
+    });
+
+    // Gift effect
+    socket.on('gift:effect', data => {
+      addLog('gift', `🎁 ${data.pesan}`);
+    });
+
+    // Player moved (like)
+    socket.on('player:moved', data => {
+      const p = players.find(p => p.uniqueId === data.uniqueId);
+      if (p) {
+        p.posisi = data.posisi;
+        updateStats();
+        renderPlayers();
+      }
+      if (!data.finished) {
+        addLog('join', `👍 ${data.username} tap/like! Maju ke ${data.posisi.toFixed(1)}%`);
+      }
+    });
+
+    // Countdown
+    socket.on('countdown', data => {
+      addLog('state', `⏱️ Countdown: ${data.angka}`);
+    });
+
+    // TikTok status
+    socket.on('tiktok:status', data => {
+      tiktokConnected = data.status === 'connected';
+      tiktokStatus.className = `badge badge-tiktok ${tiktokConnected ? 'connected' : 'disconnected'}`;
+      tiktokText.textContent = tiktokConnected ? 'CONNECTED ✓' : 'DISCONNECTED ✗';
+
+      // Update config panel
+      if (data.status === 'connected') {
+        updateConnectionStatus('connected', '🟢', `Connected ke @${data.username || ''}`);
+        if (data.username) tiktokUsernameInput.value = data.username;
+      } else if (data.status === 'connecting') {
+        updateConnectionStatus('connecting', '🔄', `Connecting ke @${data.username || ''}...`);
+        if (data.username) tiktokUsernameInput.value = data.username;
+      } else if (data.status === 'disconnected') {
+        updateConnectionStatus('disconnected', '🔴', 'Disconnected');
+      } else if (data.status === 'error') {
+        updateConnectionStatus('error', '❌', data.message || 'Error');
+      }
+
+      addLog(tiktokConnected ? 'state' : 'error', `📡 TikTok: ${data.status}${data.message ? ' — ' + data.message : ''}`);
+    });
+
+    // TikTok config response
+    socket.on('tiktok:config', data => {
+      if (data.username) {
+        tiktokUsernameInput.value = data.username;
+      }
+      if (data.connected) {
+        updateConnectionStatus('connected', '🟢', `Connected ke @${data.username}`);
+        tiktokConnected = true;
+        tiktokStatus.className = 'badge badge-tiktok connected';
+        tiktokText.textContent = 'CONNECTED ✓';
+      } else {
+        updateConnectionStatus('disconnected', '🔴', 'Disconnected');
+        tiktokConnected = false;
+        tiktokStatus.className = 'badge badge-tiktok disconnected';
+        tiktokText.textContent = 'DISCONNECTED ✗';
+      }
+    });
+
+    // Join waiting
+    socket.on('join:waiting', data => {
+      addLog('join', `⏳ ${data.username} masuk waiting list.`);
+    });
+
+    // Error handler dari server
+    socket.on('error', data => {
+      console.error('[Dashboard] Error dari server:', data);
+      
+      if (data.type === 'not_enough_players') {
+        showNotification('error', '⚠️ Player Tidak Cukup!', data.message);
+        addLog('error', `❌ ${data.message}`);
+      } else if (data.type === 'invalid_state') {
+        showNotification('warning', '⚠️ State Invalid!', data.message);
+        addLog('error', `❌ ${data.message}`);
+      } else {
+        showNotification('error', '❌ Error!', data.message || 'Terjadi kesalahan.');
+        addLog('error', data.message || 'Unknown error');
+      }
+    });
+
+    // Connection established
+    socket.on('connect', () => {
+      addLog('info', '🔌 Terhubung ke server.');
+    });
+
+    socket.on('disconnect', () => {
+      addLog('error', '❌ Terputus dari server!');
+    });
+
+    // ===================== INIT =====================
+    updateStats();
+    renderPlayers();
+    addLog('info', '🎮 Dashboard dimulai.');
+
+    // Request current TikTok config
+    socket.emit('tiktok:getConfig');
+  </script>
+</body>
+</html>

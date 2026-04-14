@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Overlay Diagnostics</title>
+  <style>
+    body { background: #111; color: #0f0; font-family: monospace; padding: 20px; }
+    .ok { color: #0f0; }
+    .err { color: #f00; }
+    .warn { color: #ff0; }
+    pre { background: #222; padding: 10px; border-radius: 8px; overflow: auto; max-height: 300px; }
+    .status-box { padding: 15px; margin: 10px 0; border-radius: 8px; }
+    .status-connected { background: #1a3a1a; border: 2px solid #0f0; }
+    .status-error { background: #3a1a1a; border: 2px solid #f00; }
+  </style>
+</head>
+<body>
+  <h1>🔍 Overlay Diagnostics</h1>
+  <div id="status"></div>
+  <h2>Socket Events Log:</h2>
+  <pre id="log">Waiting...</pre>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+  <script>
+    const log = document.getElementById('log');
+    const status = document.getElementById('status');
+    let lines = [];
+
+    function addLog(msg, type = 'info') {
+      const time = new Date().toLocaleTimeString();
+      const cls = type === 'error' ? 'err' : type === 'success' ? 'ok' : type === 'warn' ? 'warn' : '';
+      lines.push(`<span class="${cls}">[${time}] ${msg}</span>`);
+      if (lines.length > 50) lines.shift();
+      log.innerHTML = lines.join('<br>');
+      log.scrollTop = log.scrollHeight;
+    }
+
+    addLog('🚀 Starting diagnostics...', 'info');
+
+    // Test 1: Can we load socket.io?
+    if (typeof io !== 'undefined') {
+      addLog('✅ Socket.io library loaded successfully', 'success');
+    } else {
+      addLog('❌ Socket.io library FAILED to load!', 'error');
+      status.innerHTML = '<div class="status-box status-error">❌ Socket.io CDN failed. Check internet connection.</div>';
+    }
+
+    // Test 2: Connect to server
+    addLog('🔌 Connecting to http://localhost:3000...', 'info');
+    const socket = io('http://localhost:3000');
+
+    socket.on('connect', () => {
+      addLog(`✅ Connected! Socket ID: ${socket.id}`, 'success');
+      status.innerHTML = '<div class="status-box status-connected">✅ CONNECTED to server</div>';
+    });
+
+    socket.on('disconnect', () => {
+      addLog('❌ Disconnected from server!', 'error');
+      status.innerHTML = '<div class="status-box status-error">❌ DISCONNECTED</div>';
+    });
+
+    socket.on('connect_error', (err) => {
+      addLog(`❌ Connection error: ${err.message}`, 'error');
+      status.innerHTML = `<div class="status-box status-error">❌ Connection failed: ${err.message}<br>Make sure server is running on port 3000</div>`;
+    });
+
+    // Test 3: Listen for state updates
+    socket.on('state:update', (data) => {
+      addLog(`📨 state:update → ${data.state} | Players: ${data.players?.length || 0}`, 'success');
+    });
+
+    socket.on('player:joined', (data) => {
+      addLog(`👤 player:joined → ${data.username}`, 'info');
+    });
+
+    socket.on('player:eliminated', (data) => {
+      addLog(`💀 player:eliminated → ${data.player?.username}`, 'warn');
+    });
+
+    socket.on('player:finished', (data) => {
+      addLog(`🏁 player:finished → ${data.username} (Rank #${data.rank})`, 'success');
+    });
+
+    socket.on('error', (data) => {
+      addLog(`⚠️ error → ${data.message}`, 'error');
+    });
+
+    // Test 4: Request initial state
+    setTimeout(() => {
+      addLog('📤 Emitting test message...', 'info');
+      socket.emit('ping');
+    }, 2000);
+  </script>
+</body>
+</html>
